@@ -84,9 +84,9 @@ document.addEventListener("DOMContentLoaded", () => {
           <div class="logs-modal-header">
             <h3>Docker Images</h3>
             <div class="logs-controls">
-              <button id="images-refresh-btn" class="logs-btn" aria-label="Refresh images" title="Refresh images">↻</button>
+              <button id="images-refresh-btn" class="logs-btn" aria-label="Refresh images" title="Refresh images">Refresh</button>
               <button id="images-prune-btn" class="logs-btn">Auto Prune</button>
-              <button id="images-close-btn" class="logs-btn">✖️ Close</button>
+              <button id="images-close-btn" class="logs-btn">Close</button>
             </div>
           </div>
           <div id="images-content" class="logs-content"><div class="loading">Loading images…</div></div>
@@ -111,7 +111,7 @@ document.addEventListener("DOMContentLoaded", () => {
         cockpit.spawn(["docker", "image", "prune", "-f"], { err: "message" })
           .then(loadImagesList)
           .catch(err => {
-            showBanner(`❌ Prune failed: ${escapeHtml(String(err))}`);
+            showBanner(`Prune failed: ${escapeHtml(String(err))}`);
             content.innerHTML = old;
           })
           .finally(() => {
@@ -201,8 +201,8 @@ document.addEventListener("DOMContentLoaded", () => {
             btn.textContent = "Deleting…";
             const shortId = imageId.replace(/^sha256:/,"").slice(0,12) || imageId;
             cockpit.spawn(["docker","rmi",imageId],{err:"message"})
-              .then(()=>{ showBanner(`🗑️ Deleted ${shortId}`); loadImagesList(); })
-              .catch(err=>{ showBanner(`❌ Delete failed: ${escapeHtml(String(err))}`); btn.disabled=false; btn.textContent=orig; });
+              .then(()=>{ showBanner(`Deleted ${shortId}`); loadImagesList(); })
+              .catch(err=>{ showBanner(`Delete failed: ${escapeHtml(String(err))}`); btn.disabled=false; btn.textContent=orig; });
           });
         });
       })
@@ -239,7 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Decide variant (info/success/error) from either options or message text
     let variant = opts.variant || "info";
     if (!opts.variant) {
-      if (/❌|failed|error/i.test(msg)) variant = "error";
+      if (/failed|error/i.test(msg)) variant = "error";
       else if (/deleted|success|started|stopped|restarted/i.test(msg)) variant = "success";
     }
 
@@ -263,8 +263,8 @@ document.addEventListener("DOMContentLoaded", () => {
     const timeStr = now.toLocaleTimeString();
 
     const iconChar =
-      variant === "success" ? "✔️" :
-      variant === "error"   ? "❌" : "ℹ️";
+      variant === "success" ? "+" :
+      variant === "error"   ? "!" : "i";
 
     toast.innerHTML = `
       <div class="toast-icon">${iconChar}</div>
@@ -303,7 +303,7 @@ document.addEventListener("DOMContentLoaded", () => {
     showBanner(`${action.charAt(0).toUpperCase()+action.slice(1)}ing ${container}…`);
     cockpit.spawn(["docker", action, container], { err:"message" })
       .then(()=>reloadContainers())
-      .catch(()=>showBanner(`❌ Failed to ${action} ${container}`));
+      .catch(()=>showBanner(`Failed to ${action} ${container}`));
   }
   window.runDockerCommand = runDockerCommand;
 
@@ -433,8 +433,8 @@ document.addEventListener("DOMContentLoaded", () => {
       const msg = `Delete container "${containerName}"? This will stop it if running.`;
       if (!window.confirm(msg)) return;
       cockpit.spawn(["docker","rm","-f",containerName],{err:"message"})
-        .then(()=>{ showBanner(`🗑️ Deleted ${containerName}`); stopManageLogStream(); stopModalTerminal(); modal.style.display='none'; reloadContainers(); })
-        .catch(err=>showBanner(`❌ Delete failed: ${escapeHtml(String(err))}`));
+        .then(()=>{ showBanner(`Deleted ${containerName}`); stopManageLogStream(); stopModalTerminal(); modal.style.display='none'; reloadContainers(); })
+        .catch(err=>showBanner(`Delete failed: ${escapeHtml(String(err))}`));
     };
 
     // default active tab
@@ -463,15 +463,15 @@ document.addEventListener("DOMContentLoaded", () => {
     const followBtn = document.getElementById('tablogs-follow-btn');
     const clearBtn  = document.getElementById('tablogs-clear-btn');
     followBtn.onclick = () => {
-      const following = followBtn.textContent.includes('⏸️');
-      if (following){ stopManageLogStream(); followBtn.textContent='▶️ Follow'; followBtn.classList.remove('active'); }
-      else { startManageLogStream(containerName); followBtn.textContent='⏸️ Stop'; followBtn.classList.add('active'); }
+      const following = followBtn.classList.contains('active');
+      if (following){ stopManageLogStream(); followBtn.textContent='Follow'; followBtn.classList.remove('active'); }
+      else { startManageLogStream(containerName); followBtn.textContent='Stop'; followBtn.classList.add('active'); }
     };
     clearBtn.onclick = () => document.getElementById('tablogs-content').innerHTML = '<pre></pre>';
     loadInitialLogsInto(containerName, 'tablogs-content');
     setTimeout(()=>{
       startManageLogStream(containerName, { tail: 0 });
-      followBtn.textContent='⏸️ Stop';
+      followBtn.textContent='Stop';
       followBtn.classList.add('active');
     }, 300);
 
@@ -669,7 +669,7 @@ document.addEventListener("DOMContentLoaded", () => {
     proc.finally?.(()=>{
       if (manageLogToken !== token) return;
       const b=document.getElementById('tablogs-follow-btn');
-      if(b){ b.textContent='▶️ Follow'; b.classList.remove('active'); }
+      if(b){ b.textContent='Follow'; b.classList.remove('active'); }
     });
   }
   function stopManageLogStream(opts={}) {
@@ -680,7 +680,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
     if (!opts.skipUI) {
       const b = document.getElementById('tablogs-follow-btn');
-      if (b) { b.textContent='▶️ Follow'; b.classList.remove('active'); }
+      if (b) { b.textContent='Follow'; b.classList.remove('active'); }
     }
   }
   function loadInitialLogsInto(containerName, targetId) {
@@ -734,9 +734,11 @@ document.addEventListener("DOMContentLoaded", () => {
                 ? `<button onclick="runDockerCommand('${name}','stop')">Stop</button>
                    <button onclick="runDockerCommand('${name}','restart')">Restart</button>`
                 : `<button onclick="runDockerCommand('${name}','start')">Start</button>`}
-              <button onclick="openManageModal('${name}')" class="cog-btn" title="Manage" aria-label="Manage">
+              <button onclick="openManageModal('${name}')" class="more-btn" title="Manage" aria-label="Manage">
                 <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
-                  <path d="M19.14,12.94a7.43,7.43,0,0,0,.05-.94,7.43,7.43,0,0,0-.05-.94l2.11-1.65a.5.5,0,0,0,.12-.64l-2-3.46a.5.5,0,0,0-.6-.22l-2.49,1a7.34,7.34,0,0,0-1.63-.94l-.38-2.65A.5.5,0,0,0,13.7,2H10.3a.5.5,0,0,0-.49.41L9.43,5.06a7.34,7.34,0,0,0-1.63.94l-2.49-1a.5.5,0,0,0-.6.22l-2,3.46a.5.5,0,0,0,.12.64L5,11.06a7.43,7.43,0,0,0-.05.94,7.43,7.43,0,0,0,.05.94L2.86,14.59a.5.5,0,0,0-.12.64l2,3.46a.5.5,0,0,0,.6.22l2.49,1a7.34,7.34,0,0,0,1.63.94l.38,2.65a.5.5,0,0,0,.49.41h3.4a.5.5,0,0,0,.49-.41l.38-2.65a7.34,7.34,0,0,0,1.63-.94l2.49,1a.5.5,0,0,0,.6-.22l2-3.46a.5.5,0,0,0-.12-.64ZM12,15.5A3.5,3.5,0,1,1,15.5,12,3.5,3.5,0,0,1,12,15.5Z"/>
+                  <circle cx="12" cy="5" r="2"/>
+                  <circle cx="12" cy="12" r="2"/>
+                  <circle cx="12" cy="19" r="2"/>
                 </svg>
               </button>
             </div>
@@ -873,14 +875,12 @@ function renderDetails(obj){
     : '<li><em>No environment variables</em></li>';
 
   return `
-    <div class="logs-content" style="background:#111;">
-      <div style="font-family:system-ui,sans-serif">
-        <p><strong>Image:</strong> ${s(image)}</p>
-        <p><strong>State:</strong> ${s(state)}</p>
-        <h4>Volumes / Mounts</h4><ul>${mountsHtml}</ul>
-        <h4>Networks</h4><ul>${netsHtml}</ul>
-        <h4>Ports</h4><ul>${portsHtml}</ul>
-        <h4>Environment</h4><ul>${envHtml}</ul>
-      </div>
+    <div class="details-content">
+      <p><strong>Image:</strong> ${s(image)}</p>
+      <p><strong>State:</strong> ${s(state)}</p>
+      <h4>Volumes / Mounts</h4><ul>${mountsHtml}</ul>
+      <h4>Networks</h4><ul>${netsHtml}</ul>
+      <h4>Ports</h4><ul>${portsHtml}</ul>
+      <h4>Environment</h4><ul>${envHtml}</ul>
     </div>`;
 }
